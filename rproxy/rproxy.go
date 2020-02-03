@@ -10,8 +10,8 @@
 package main
 
 import (
-	h "github.com/Gamemastertwig/go-secure/httprproxy"
-	t "github.com/Gamemastertwig/go-secure/tcprproxy"
+	h "github.com/Gamemastertwig/go-secure/rproxy/httprproxy"
+	t "github.com/Gamemastertwig/go-secure/rproxy/tcprproxy"
 )
 
 func main() {
