@@ -15,19 +15,19 @@ var connSig, incoming, outgoing, done, exit chan string
 var connections []net.Conn
 
 func main() {
-	front = "localhost:8080"
-	back = "http://localhost:3000/"
+	// front = "localhost:8080"
+	// back = "http://localhost:3000/"
 
-	httpForward(front, back)
+	// httpForward(front, back)
 
 	// TCP reverse proxy is failing, need to find
 	// way to restablish a connection after EOF
-	/*
-		front = "localhost:8080"
-		back = "localhost:3000"
 
-		tcpForward()
-	*/
+	front = "localhost:8080"
+	back = "localhost:3000"
+
+	tcpForward()
+
 }
 
 func httpForward(in string, out string) {
@@ -89,6 +89,8 @@ func session(listn net.Listener) {
 	defer frontConn.Close()
 
 	connections = append(connections, frontConn)
+	// send message to allow for an new connection
+	connSig <- "Connection Complete"
 
 	// create connection for server end
 	serverConn, err := net.Dial("tcp", back)
@@ -101,6 +103,7 @@ func session(listn net.Listener) {
 	defer serverConn.Close()
 
 	// create message channels
+	done = make(chan string)
 	incoming = make(chan string)
 	outgoing = make(chan string)
 
@@ -126,13 +129,15 @@ func tcpListen(conn net.Conn, packet chan string) {
 
 		_, err = conn.Read(rBuf)
 		if err != nil {
-			log.Fatalf("Error reading packet form %s: %+v", conn.LocalAddr().String(), err)
+			log.Printf("Error reading packet form %s: %+v", conn.LocalAddr().String(), err)
+			break
 		}
 		// log.Println("Sent request ([]byte)::", requestBuf)
 		log.Println("Got request/response (String)::\n", string(rBuf))
 
 		packet <- string(rBuf)
 	}
+	done <- "Session Ended"
 }
 
 func tcpServe(conn net.Conn, packet chan string) {
