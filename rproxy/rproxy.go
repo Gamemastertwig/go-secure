@@ -17,11 +17,12 @@ import (
 func main() {
 	front := "localhost:8080"
 	back := "localhost:3000"
+	logger := "localhost:9090"
 	useTCP := true
 
 	if useTCP {
-		t.TCPForward(front, back)
+		t.TCPForward(front, back, logger)
 	} else {
-		h.HTTPForward(front, back)
+		h.HTTPForward(front, back, logger)
 	}
 }

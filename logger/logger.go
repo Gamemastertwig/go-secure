@@ -1,46 +1,49 @@
 package main
 
 import (
-	"log"
+	"bytes"
+	"fmt"
 	"net"
 )
 
-var ladd net.TCPAddr
-var radd net.TCPAddr
+var connSig chan string
 
 func main() {
-	ladd.IP = net.ParseIP("localhost")
-	ladd.Port = 8088
+	connSig = make(chan string)
+	port := "localhost:9090"
 
-	radd.IP = net.ParseIP("localhost")
-	radd.Port = 3000
+	listn, _ := net.Listen("tcp", port)
 
-	logConn, err := net.DialTCP("tcp", &ladd, &radd)
-	if err != nil {
-		log.Fatalf("Unable to connect logger to host: %+v", err)
+	fmt.Println("Logging Server listening on " + port)
+
+	for {
+		go logSession(listn)
+		<-connSig
 	}
+}
 
-	// defer close
-	logConn.Close()
+func logSession(listn net.Listener) {
+	conn, _ := listn.Accept()
+	defer conn.Close()
+
+	fmt.Println("New Connection On " + conn.LocalAddr().String())
+	connSig <- "Done"
 
 	for {
 		buffer := make([]byte, 1024)
-		lenBuf, err := logConn.Read(buffer)
+
+		// Attempt read
+		_, err := conn.Read(buffer)
 		if err != nil {
-			log.Fatalf("Unable to read from buffer: %+v", err)
+			break
 		}
-		for i := 0; i < lenBuf; i++ {
-			// check for null (\u0000) and remove trailing values
-			if buffer[i] == '\u0000' {
-				buffer = append(buffer[0:i])
-				break
-			}
-			// if buffer not empty write buffer to log file
-			if buffer != nil {
-				// temp code to verify logic
-				log.Print(string(buffer))
-				// code to write log file
-			}
+
+		cleanBuf := bytes.Trim(buffer, "\x00")
+
+		// display log information here
+		// just display to STDOUT for now
+		if string(cleanBuf) != "" {
+			fmt.Println(string(cleanBuf))
 		}
 	}
 }
