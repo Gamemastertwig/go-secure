@@ -3,8 +3,8 @@ security wrapper for basic servers - conceptual
 
 
 ## Features
-- [ ] Reverse Proxy
+- [x] Reverse Proxy
 - [ ] Load Balancer
 - [ ] Firewall
-- [ ] Logger
+- [x] Logger
 - [ ] IDS - Intrusion Detection System

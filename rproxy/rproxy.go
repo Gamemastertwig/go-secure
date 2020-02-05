@@ -20,7 +20,7 @@ func init() {
 
 func main() {
 	front := "localhost:8080"
-	back := "localhost:3000"
+	back := "localhost:8081"
 	logger := "localhost:9090"
 	useTCP := true
 
