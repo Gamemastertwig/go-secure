@@ -8,6 +8,8 @@ import (
 	"net"
 )
 
+// ConnLogMess creates a connection the log server and sends it a message
+// then closes it
 func ConnLogMess(logAddr string, mType string, message string) {
 	var logConn net.Conn
 
@@ -17,7 +19,7 @@ func ConnLogMess(logAddr string, mType string, message string) {
 		///log.Printf("Dial to logger at %+v failed:: %+v ", logAddr, err)
 	} else {
 		log.Println("Connected to logging server at " + logConn.LocalAddr().String())
-		mes := mType + ": " + logConn.LocalAddr().String() + " " + message
+		mes := mType + ": " + message
 		logConn.Write([]byte(mes))
 	}
 }

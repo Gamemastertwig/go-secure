@@ -1,10 +1,18 @@
 package main
 
-import "net/http"
+import "github.com/Gamemastertwig/go-secure/launcher"
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello World"))
-	})
-	http.ListenAndServe(":3000", nil)
+	logger := launcher.Program{Dir: "./logger", Comm: "./logger", Arg: "", Pid: 0}
+	proxy := launcher.Program{Dir: "./rproxy", Comm: "./rproxy", Arg: "", Pid: 0}
+
+	_, started := launcher.Check(logger)
+	if !started {
+		launcher.Start(logger)
+	}
+
+	_, started = launcher.Check(proxy)
+	if !started {
+		launcher.Start(proxy)
+	}
 }

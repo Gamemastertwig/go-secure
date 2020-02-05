@@ -14,6 +14,10 @@ import (
 	t "github.com/Gamemastertwig/go-secure/rproxy/tcprproxy"
 )
 
+func init() {
+
+}
+
 func main() {
 	front := "localhost:8080"
 	back := "localhost:3000"
