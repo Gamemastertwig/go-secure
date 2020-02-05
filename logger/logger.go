@@ -26,7 +26,7 @@ func logSession(listn net.Listener) {
 	conn, _ := listn.Accept()
 	defer conn.Close()
 
-	fmt.Println("New Connection On " + conn.LocalAddr().String())
+	// fmt.Println("New Connection On " + conn.LocalAddr().String())
 	connSig <- "Done"
 
 	for {

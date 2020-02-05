@@ -16,23 +16,20 @@ var logConn net.Conn
 
 // HTTPForward uses httputil.ReverseProxy to 'forward' a request
 // from client (in) to a server (out)
-func HTTPForward(in string, out string, logger string) {
-	// attempt to connect logging server
-	l.ConnectLogger(logger, logConn)
-
+func HTTPForward(fAddr string, bAddr string, logAddr string) {
 	// parsing destination url
 	log.Println("HTTP Reverse Proxy")
-	l.LogMessage("LOG", "HTTP Reverse Proxy", logConn)
+	l.ConnLogMess(logAddr, "LOG", "HTTP Reverse Proxy")
 
 	// need to add 'http://' to parse url for http reverse proxy
-	out = "http://" + out
-	to, err := url.Parse(out)
+	bAddr = "http://" + bAddr
+	to, err := url.Parse(bAddr)
 	if err != nil {
-		l.LogMessage("ERROR", "Failed to parse "+out+":: "+err.Error(), logConn)
-		log.Fatalln("Failed to parse " + out + ":: " + err.Error())
+		l.ConnLogMess(logAddr, "ERROR", "Failed to parse "+bAddr+":: "+err.Error())
+		log.Fatalln("Failed to parse " + bAddr + ":: " + err.Error())
 	}
 	log.Println("Parsing Destination URL")
-	l.LogMessage("LOG", "Parsing Destination URL", logConn)
+	l.ConnLogMess(logAddr, "LOG", "Parsing Destination URL")
 
 	// modify http header
 	director := func(req *http.Request) {
@@ -53,9 +50,9 @@ func HTTPForward(in string, out string, logger string) {
 		proxy.ServeHTTP(w, r)
 	})
 
-	err = http.ListenAndServe(in, nil)
+	err = http.ListenAndServe(fAddr, nil)
 	if err != nil {
-		l.LogMessage("ERROR", "Failed to start http.ListenAndServe:: "+err.Error(), logConn)
+		l.ConnLogMess(logAddr, "ERROR", "Failed to start http.ListenAndServe:: "+err.Error())
 		log.Fatalln("Failed to start http.ListenAndServe:: " + err.Error())
 	}
 }
