@@ -10,23 +10,49 @@
 package main
 
 import (
-	h "github.com/Gamemastertwig/go-secure/rproxy/httprproxy"
+	"encoding/json"
+	"log"
+	"os"
+
 	t "github.com/Gamemastertwig/go-secure/rproxy/tcprproxy"
 )
 
-func init() {
+type connection struct {
+	FrontAddr string `json:"frontend"`
+	BackAddr  string `json:"backend"`
+	LogAddr   string `json:"logger"`
+}
 
+var connections []connection
+
+func init() {
+	// code to pull from json
+	// open config file (json) at path
+	f, err := os.Open("config.json")
+	if err != nil {
+		log.Fatalf("Unable to open config: %+v", err)
+	}
+	// defer close
+	defer f.Close()
+
+	// decode config (json)
+	err = json.NewDecoder(f).Decode(&connections)
+	if err != nil {
+		log.Fatalf("Unable to decode config: %+v", err)
+	}
 }
 
 func main() {
-	front := "localhost:8080"
-	back := "localhost:8081"
-	logger := "localhost:9090"
-	useTCP := true
+	connect := connections[0]
+	t.TCPForward(connect.FrontAddr, connect.BackAddr, connect.LogAddr)
 
-	if useTCP {
-		t.TCPForward(front, back, logger)
-	} else {
-		h.HTTPForward(front, back, logger)
-	}
+	// var wg sync.WaitGroup
+	// wg.Add(len(connections))
+	// for _, c := range connections {
+	// 	go func() {
+	//		t.TCPForward(c.FrontAddr, c.BackAddr, c.LogAddr)
+	// 		wg.Done()
+	// 	}()
+	// }
+	// wg.Wait()
 }

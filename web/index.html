@@ -2,74 +2,58 @@
 <html>
     <head>
         <meta charset="UTF-8">
+        ​<!-- <meta http-equiv="refresh" content="3"/>  //-->
         <link rel="stylesheet" href="css/default.css">
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
         <title>Go-Secure Visual Interface Tool</title>
     </head>
     <body>
         <table class="blueTable">
             <thead>
             <tr>
-            <th>Reverse Proxy</th>
+                <th>Reverse Proxy</th>
+                <th>Firewall</th>
             </tr>
             </thead>
             <tbody>
             <tr>
-            <td>Reverse Proxy Content Here</td>
+                <td>{{.RproxyBody}}</td>
+                <td>{{.FirewallBody}}</td>
+            </tr>
+            <tr>
+            <td><form>
+                <button class="button" type="submit" value="start_stop">Start/Stop</button>
+            </form></td>
+            <td><form>
+                <button class="button" type="submit" value="add_rule">Submit</button>
+            </form></td>
             </tr>
             </tbody>
         </table>
-        <form>
-            <button class="button" type="submit" value="Submit">Submit</button>
-        </form>
-        <br><br>
+        <br>
         <table class="blueTable">
             <thead>
             <tr>
-            <th>Firewall</th>
+                <th>Load Balancer</th>
+                <th>Intrusion Detection System (IDS)</th>
             </tr>
             </thead>
             <tbody>
             <tr>
-            <td>Firewall Content Here</td>
+                <td>{{.LBalBody}}</td>
+                <td>{{.IDSBody}}</td>
+            </tr>
+            <tr>
+            <td><form>
+                <button class="button, disabled" disabled>Start/Stop</button>
+            </form></td>
+            <td><form>
+                <button class="button, diabbled" disabled>Start/Stop</button>
+            </form></td>
             </tr>
             </tbody>
         </table>
-        <form>
-            <button class="button" type="submit" value="Submit">Submit</button>
-        </form>
-        <br><br>
-        <table class="blueTable">
-            <thead>
-            <tr>
-            <th>Load Balancer</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-            <td>Load Balancer Content Here</td>
-            </tr>
-            </tbody>
-        </table>
-        <form>
-            <button class="button" type="submit" value="Submit">Submit</button>
-        </form>
-        <br><br>
-        <table class="blueTable">
-            <thead>
-            <tr>
-            <th>Intrusion Detection System</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-            <td>IDS Content Here</td>
-            </tr>
-            </tbody>
-        </table>
-        <form>
-            <button class="button" type="submit" value="Submit">Submit</button>
-        </form>
-        <br><br>
+        <br>
         <table class="blueTable">
             <thead>
             <tr>
@@ -78,12 +62,14 @@
             </thead>
             <tbody>
             <tr>
-            <td>logger Content Here</td>
+            <td>{{.LogBody}}</td>
+            </tr>
+            <tr>
+            <td><form>
+                <button class="button" type="submit" value="Submit">Save</button>
+            </form></td>
             </tr>
             </tbody>
-        </table>
-        <form>
-            <button class="button" type="submit" value="Submit">Submit</button>
-        </form>
+        </table>       
     </body>
 </html>

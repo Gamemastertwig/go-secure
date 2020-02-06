@@ -1,0 +1,7 @@
+[
+    {
+        "frontend":"localhost:8080",
+        "backend":"10.10.0.3:8080",
+        "logger":"localhost:9090"
+    }
+]

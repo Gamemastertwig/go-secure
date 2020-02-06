@@ -23,6 +23,7 @@ table.blueTable {
     border-bottom: 2px solid #444444;
   }
   table.blueTable thead th {
+    width: 50%;
     font-size: 15px;
     font-weight: bold;
     color: #FFFFFF;
@@ -56,4 +57,8 @@ table.blueTable {
     font-size: 16px;
     margin: 4px 2px;
     cursor: pointer;
+  }
+  .disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }

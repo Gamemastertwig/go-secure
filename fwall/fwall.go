@@ -21,9 +21,9 @@ import (
 
 // config/rule struct
 type config struct {
-	Proto string   `json:"proto,omitempty"`
-	Port  int      `json:"port,omitempty"`
-	Allow []string `json:"allow,omitempty"`
+	Proto string   `json:"proto"`
+	Port  int      `json:"port"`
+	Allow []string `json:"allow"`
 }
 
 func init() {

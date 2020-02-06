@@ -32,7 +32,7 @@ func TCPForward(front string, back string, logger string) {
 
 	// allow for multiple connections
 	for {
-		go Session(listn, back, logger)
+		go Session(listn, front, back, logger)
 		<-connSig
 	}
 }
@@ -56,7 +56,7 @@ func TCPForwardLB(front string, backends []string, logAddr string) {
 	for {
 		// call loadBalance here
 		bAddr := loadBalanceRand(backends, logAddr)
-		go Session(listn, bAddr, logAddr)
+		go Session(listn, front, bAddr, logAddr)
 		<-connSig
 	}
 }
@@ -86,7 +86,7 @@ func loadBalanceRand(backends []string, logAddr string) string {
 // Session allows for multiple connections from clients at the same time
 // listening on front end (net.Listener) and then connects to back end
 // address (backAddr string)
-func Session(listn net.Listener, backAddr string, logAddr string) {
+func Session(listn net.Listener, frontAddr string, backAddr string, logAddr string) {
 	// wait for front end connection
 	frontConn, err := listn.Accept()
 	if err != nil {
@@ -118,24 +118,24 @@ func Session(listn net.Listener, backAddr string, logAddr string) {
 	outgoing = make(chan string)
 
 	// listen for message from client and log request
-	go TCPListen(frontConn, incoming, logAddr)
+	go TCPListen(frontConn, incoming, logAddr, frontAddr)
 	// serve message from client to server
-	go TCPServe(serverConn, incoming, logAddr)
+	go TCPServe(serverConn, incoming, logAddr, backAddr)
 	// listen for response from server and log request
-	go TCPListen(serverConn, outgoing, logAddr)
+	go TCPListen(serverConn, outgoing, logAddr, frontAddr)
 	// server message from server to client
-	go TCPServe(frontConn, outgoing, logAddr)
+	go TCPServe(frontConn, outgoing, logAddr, backAddr)
 	<-done
 }
 
 // TCPListen listens on conn (net.Conn) and reads the data ([]byte) into a
 // string channel
-func TCPListen(conn net.Conn, packet chan string, logAddr string) {
+func TCPListen(conn net.Conn, packet chan string, logAddr string, fromAddr string) {
 	for {
 		// create read buffer
-		rBuf := make([]byte, 1024)
+		rBuf := make([]byte, 3072)
 
-		err := conn.SetDeadline(time.Now().Add(5 * time.Second))
+		err := conn.SetDeadline(time.Now().Add(2 * time.Second))
 		if err != nil {
 			l.ConnLogMess(logAddr, "ERROR TCPLISTEN: ", "Failed deadline setup for "+
 				conn.LocalAddr().String()+":: "+err.Error())
@@ -151,14 +151,14 @@ func TCPListen(conn net.Conn, packet chan string, logAddr string) {
 
 		// place buffer in packet channel
 		packet <- string(rBuf)
-		l.ConnLogMess(logAddr, "LOG TCPLISTEN: ", "Packet read.")
+		l.ConnLogMess(logAddr, "LOG TCPLISTEN "+fromAddr+": ", "Packet read.")
 	}
 	done <- "Done"
 }
 
 // TCPServe serves the data ([]byte) from the packet (string channel)
 // to the connection (net.Conn)
-func TCPServe(conn net.Conn, packet chan string, logAddr string) {
+func TCPServe(conn net.Conn, packet chan string, logAddr string, fromAddr string) {
 	for {
 		// get buffer from packet channel
 		mBuf := <-packet
@@ -166,7 +166,7 @@ func TCPServe(conn net.Conn, packet chan string, logAddr string) {
 		// connection exist write buffer to connection
 		if conn != nil {
 			conn.Write([]byte(mBuf))
-			l.ConnLogMess(logAddr, "LOG TCPSERVE: ", "Packet sent.")
+			l.ConnLogMess(logAddr, "LOG TCPSERVE "+fromAddr+": ", "Packet sent.")
 		}
 	}
 }
