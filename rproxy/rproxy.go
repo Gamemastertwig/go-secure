@@ -44,7 +44,7 @@ func init() {
 
 func main() {
 	connect := connections[0]
-	t.TCPForward(connect.FrontAddr, connect.BackAddr, connect.LogAddr)
+	t.TCPForward(connect.FrontAddr, connect.BackAddr, connect.LogAddr, "RPROXY")
 
 	// var wg sync.WaitGroup
 	// wg.Add(len(connections))

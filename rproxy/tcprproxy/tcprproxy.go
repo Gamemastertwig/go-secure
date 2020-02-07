@@ -3,51 +3,52 @@ package tcprproxy
 
 // Import packages
 import (
+	"bytes"
 	"log"
 	"math/rand"
 	"net"
 	"time"
 
-	l "github.com/Gamemastertwig/go-secure/logHelper"
+	l "github.com/Gamemastertwig/go-secure/loghelper"
 )
 
 // Global Variables
-var connSig, incoming, outgoing, done, exit chan string
-var logConn net.Conn
+var connSig, done, exit chan string
+var incoming, outgoing chan []byte
 
 // TCPForward uses tcp connections to establish a reverse proxy
-func TCPForward(front string, back string, logger string) {
+func TCPForward(front string, back string, logger string, program string) {
 	// create tcp connection
 	listn, err := net.Listen("tcp", front)
 	if err != nil {
-		l.ConnLogMess(logger, "ERROR RPROXY: ", front+" Failed to setup listiner for RPROXY")
-		log.Fatalf("Failed to setup listener %v", err)
+		l.ConnLogMess(logger, program+" ERROR: ", front+" Failed to setup listiner for RPROXY")
+		log.Fatalf(program+" ERROR: ", front+" Failed to setup listiner for RPROXY")
 	}
 
-	l.ConnLogMess(logger, "LOG RPROXY: ", "(TCP) Listening on "+front)
-	log.Println("TCP ReverseProxy Listening on " + front)
+	l.ConnLogMess(logger, program+" LOG: ", "(TCP) Listening on "+front)
+	log.Println(program+" LOG: ", "(TCP) Listening on "+front)
 
 	// create connection signal channel
 	connSig = make(chan string)
 
 	// allow for multiple connections
 	for {
-		go Session(listn, front, back, logger)
+		go Session(listn, front, back, logger, program)
 		<-connSig
 	}
 }
 
 // TCPForwardLB uses tcp connections to establish a reverse proxy with load balancer
-func TCPForwardLB(front string, backends []string, logAddr string) {
+func TCPForwardLB(front string, backends []string, logAddr string, program string) {
 	// create tcp connection
 	listn, err := net.Listen("tcp", front)
 	if err != nil {
-		l.ConnLogMess(logAddr, "ERROR LB: ", front+" Failed to setup listiner for LB RPROXY")
-		log.Fatalf("Failed to setup listener %v", err)
+		l.ConnLogMess(logAddr, program+" ERROR: ", front+" Failed to setup listiner for LB RPROXY")
+		log.Fatalf(program+" ERROR: ", front+" Failed to setup listiner for LB RPROXY")
 	}
 
-	l.ConnLogMess(logAddr, "LOG LB: ", "(TCP) Listening on "+front)
-	log.Println("Load Balancer Listening on " + front)
+	l.ConnLogMess(logAddr, program+" LOG: ", "(TCP) Listening on "+front)
+	log.Println(program+" LOG: ", "(TCP) Listening on "+front)
 
 	// create connection signal channel
 	connSig = make(chan string)
@@ -55,13 +56,14 @@ func TCPForwardLB(front string, backends []string, logAddr string) {
 	// allow for multiple connections
 	for {
 		// call loadBalance here
-		bAddr := loadBalanceRand(backends, logAddr)
-		go Session(listn, front, bAddr, logAddr)
+		bAddr := loadBalanceRand(backends, logAddr, program)
+		go Session(listn, front, bAddr, logAddr, program)
 		<-connSig
 	}
 }
 
-func loadBalanceRand(backends []string, logAddr string) string {
+// Not working correctly [to do]
+func loadBalanceRand(backends []string, logAddr string, program string) string {
 	// verify back ends
 	for i, b := range backends {
 		TempConn, err := net.Dial("tcp", b)
@@ -78,7 +80,8 @@ func loadBalanceRand(backends []string, logAddr string) string {
 	lenBack := len(backends)
 	n := rand.Intn(lenBack)
 
-	l.ConnLogMess(logAddr, "LOG LB: ", "Sending load to "+backends[n])
+	l.ConnLogMess(logAddr, program+" LOG: ", "Sending load to "+backends[n])
+	log.Println(program+" LOG: ", "Sending load to "+backends[n])
 
 	return backends[n]
 }
@@ -86,14 +89,15 @@ func loadBalanceRand(backends []string, logAddr string) string {
 // Session allows for multiple connections from clients at the same time
 // listening on front end (net.Listener) and then connects to back end
 // address (backAddr string)
-func Session(listn net.Listener, frontAddr string, backAddr string, logAddr string) {
+func Session(listn net.Listener, frontAddr string, backAddr string, logAddr string, program string) {
 	// wait for front end connection
 	frontConn, err := listn.Accept()
 	if err != nil {
-		l.ConnLogMess(logAddr, "ERROR SESSION: ", "Failed to accept connection:: "+err.Error())
-		log.Fatalln("Failed to accept connection:: " + err.Error())
+		l.ConnLogMess(logAddr, program+" ERROR:", "Failed to accept connection:: "+err.Error())
+		log.Fatalln(program + " ERROR: Failed to accept connection:: " + err.Error())
 	}
-	l.ConnLogMess(logAddr, "LOG SESSION: ", "Accepted Connection from "+frontConn.LocalAddr().String())
+	l.ConnLogMess(logAddr, program+" LOG:", "Accepted Connection from "+frontConn.LocalAddr().String())
+	log.Println(program + " LOG: Accepted Connection from " + frontConn.LocalAddr().String())
 
 	// defer close : member LIFO
 	defer frontConn.Close()
@@ -104,43 +108,45 @@ func Session(listn net.Listener, frontAddr string, backAddr string, logAddr stri
 	// create connection for server end
 	serverConn, err := net.Dial("tcp", backAddr)
 	if err != nil {
-		l.ConnLogMess(logAddr, "ERROR SESSION: ", "Dial failed for address "+backAddr+":: "+err.Error())
-		log.Fatalln("Dial failed for address " + backAddr + ":: " + err.Error())
+		l.ConnLogMess(logAddr, program+" ERROR:", "Dial failed for address "+backAddr+":: "+err.Error())
+		log.Fatalln(program + " ERROR: Dial failed for address " + backAddr + ":: " + err.Error())
 	}
-	l.ConnLogMess(logAddr, "LOG SESSION: ", "Dial succesful to "+backAddr)
+	l.ConnLogMess(logAddr, program+" LOG:", "Dial succesful to "+backAddr)
+	log.Println(program + " LOG: Dial succesful to " + backAddr)
 
 	// defer close
 	defer serverConn.Close()
 
 	// create message channels
 	done = make(chan string)
-	incoming = make(chan string)
-	outgoing = make(chan string)
+	incoming = make(chan []byte)
+	outgoing = make(chan []byte)
 
 	// listen for message from client and log request
-	go TCPListen(frontConn, incoming, logAddr, frontAddr)
+	go TCPListen(frontConn, incoming, logAddr, frontAddr, program)
 	// serve message from client to server
-	go TCPServe(serverConn, incoming, logAddr, backAddr)
+	go TCPServe(serverConn, incoming, logAddr, backAddr, program)
 	// listen for response from server and log request
-	go TCPListen(serverConn, outgoing, logAddr, frontAddr)
+	go TCPListen(serverConn, outgoing, logAddr, frontAddr, program)
 	// server message from server to client
-	go TCPServe(frontConn, outgoing, logAddr, backAddr)
+	go TCPServe(frontConn, outgoing, logAddr, backAddr, program)
 	<-done
 }
 
 // TCPListen listens on conn (net.Conn) and reads the data ([]byte) into a
 // string channel
-func TCPListen(conn net.Conn, packet chan string, logAddr string, fromAddr string) {
+func TCPListen(conn net.Conn, packet chan []byte, logAddr string, fromAddr string, program string) {
 	for {
 		// create read buffer
-		rBuf := make([]byte, 3072)
+		rBuf := make([]byte, 1024)
 
-		err := conn.SetDeadline(time.Now().Add(2 * time.Second))
+		err := conn.SetDeadline(time.Now().Add(1 * time.Second))
 		if err != nil {
-			l.ConnLogMess(logAddr, "ERROR TCPLISTEN: ", "Failed deadline setup for "+
+			l.ConnLogMess(logAddr, program+" ERROR:", "Failed deadline setup for "+
 				conn.LocalAddr().String()+":: "+err.Error())
-			log.Fatalln("Failed deadline setup for " +
+			log.Println(program + " ERROR: Failed deadline setup for " +
 				conn.LocalAddr().String() + ":: " + err.Error())
+			break
 		}
 
 		// Attempt read
@@ -149,24 +155,30 @@ func TCPListen(conn net.Conn, packet chan string, logAddr string, fromAddr strin
 			break
 		}
 
+		cBuf := bytes.Trim(rBuf, "\x00")
+
 		// place buffer in packet channel
-		packet <- string(rBuf)
-		l.ConnLogMess(logAddr, "LOG TCPLISTEN "+fromAddr+": ", "Packet read.")
+		packet <- cBuf
+
+		l.ConnLogMess(logAddr, program+" LOG: "+fromAddr+":", "Packet read.")
+		log.Println(program + " LOG: " + fromAddr + ": Packet read.")
 	}
 	done <- "Done"
 }
 
 // TCPServe serves the data ([]byte) from the packet (string channel)
 // to the connection (net.Conn)
-func TCPServe(conn net.Conn, packet chan string, logAddr string, fromAddr string) {
+func TCPServe(conn net.Conn, packet chan []byte, logAddr string, fromAddr string, program string) {
 	for {
 		// get buffer from packet channel
 		mBuf := <-packet
 
 		// connection exist write buffer to connection
 		if conn != nil {
-			conn.Write([]byte(mBuf))
-			l.ConnLogMess(logAddr, "LOG TCPSERVE "+fromAddr+": ", "Packet sent.")
+			conn.Write(mBuf)
+
+			l.ConnLogMess(logAddr, program+" LOG: "+fromAddr+":", "Packet sent.")
+			log.Println(program + " LOG: " + fromAddr + ": Packet sent.")
 		}
 	}
 }

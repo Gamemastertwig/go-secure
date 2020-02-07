@@ -9,7 +9,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 
-	l "github.com/Gamemastertwig/go-secure/logHelper"
+	l "github.com/Gamemastertwig/go-secure/loghelper"
 )
 
 var logConn net.Conn

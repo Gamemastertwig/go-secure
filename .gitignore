@@ -1,4 +1,10 @@
 hellod.go
 fwall/fwall
+fwall/config.json
+fwall/logConfig.json
 rproxy/rproxy
+rproxy/config.json
 logger/logger
+logger/log.txt
+logger/logConfig.json
+fwall/config.json

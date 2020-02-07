@@ -1,20 +1,62 @@
+// GO-SECURE (LOGGER)
+/*
+	GO-SECURE (LOGGER) is part of a suite of security applications built in Go.
+	This modual is a light-weight tool for handling and logging messages from
+	other applications in this suite. (Academic concept)
+
+	Revature: Brandon Locker (GameMasterTwig)
+*/
 package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"net"
+	"strings"
+
+	"github.com/Gamemastertwig/go-secure/loghelper"
+	"github.com/Gamemastertwig/go-secure/logwriter"
 )
 
+// connection to logger server
+type logger struct {
+	LogAddress string `json:"logger"`
+}
+
 var connSig chan string
+var logs []logger
+var logAddr string
+
+func init() {
+	getLogAdder()
+}
+
+func getLogAdder() {
+	if logwriter.CheckForFile("logConfig.json") {
+		// file is present
+		f, err := ioutil.ReadFile("logConfig.json")
+		if err != nil {
+			log.Fatalf("Unable to open logConfig: %+v", err)
+		}
+
+		// decode config (json)
+		err = json.Unmarshal(f, &logs)
+		if err != nil {
+			log.Fatalf("Unable to decode logConfig: %+v", err)
+		}
+		logAddr = logs[0].LogAddress
+	}
+}
 
 func main() {
 	connSig = make(chan string)
-	port := "localhost:9090"
 
-	listn, _ := net.Listen("tcp", port)
+	listn, _ := net.Listen("tcp", logAddr)
 
-	fmt.Println("Logging Server listening on " + port)
+	fmt.Println("Logging Server listening on " + logAddr)
 
 	for {
 		go logSession(listn)
@@ -43,7 +85,21 @@ func logSession(listn net.Listener) {
 		// display log information here
 		// just display to STDOUT for now
 		if string(cleanBuf) != "" {
-			fmt.Println(string(cleanBuf))
+			if strings.Contains(string(cleanBuf), "Packet sent") || strings.Contains(string(cleanBuf), "Packet read") {
+				// only print packets to consoul
+				fmt.Println(string(cleanBuf))
+			} else if strings.Contains(string(cleanBuf), "LOG FILE") {
+				// send back a copy of log.txt
+				temps := strings.Split(string(cleanBuf), " ")
+				temp := logwriter.ReadFile("log.txt")
+				loghelper.ConnLogMess(temps[4], "", string(temp))
+			} else {
+				// print and save to file
+				fmt.Println(string(cleanBuf))
+				if !logwriter.WriteAppend("log.txt", cleanBuf) {
+					fmt.Println("Failed to write to log.txt")
+				}
+			}
 		}
 	}
 }
