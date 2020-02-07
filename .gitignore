@@ -1,11 +1,12 @@
-hellod.go
 fwall/fwall
 fwall/config.json
 fwall/logConfig.json
 rproxy/rproxy
 rproxy/config.json
+rproxy/Dockerfile
 logger/logger
 logger/log.txt
 logger/logConfig.json
-fwall/config.json
-rproxy/config.json
+logger/Dockerfile
+
+
