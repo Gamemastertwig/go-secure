@@ -1,9 +1,0 @@
-[
-    {
-        "proto": "tcp",
-        "port": 3000,
-        "allow": [
-            "localhost"
-        ]
-    }
-]
